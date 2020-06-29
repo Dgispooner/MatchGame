@@ -15,17 +15,35 @@ using System.Windows.Shapes;
 
 namespace MatchGame
 {
+
+    using System.Windows.Threading;
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
     {
+        DispatcherTimer timer = new DispatcherTimer();
+        int tenthsOfSecondsElapsed;
+        int matchesFound;
+
         public MainWindow()
         {
             InitializeComponent();
-
+            timer.Interval = TimeSpan.FromSeconds(.1);
+            timer.Tick += Timer_Tick;               
             SetUpGame();
 
+        }
+
+        private void Timer_Tick(object sender, EventArgs e)
+        {
+            tenthsOfSecondsElapsed++;
+            timeTextBlock.Text = (tenthsOfSecondsElapsed / 10F).ToString("0.0s");
+            if (matchesFound == 8)
+            {
+                timer.Stop();
+                timeTextBlock.Text = timeTextBlock.Text + " - Play again?";
+            }
         }
 
         private void SetUpGame()
@@ -41,14 +59,55 @@ namespace MatchGame
                 "🐱‍🏍","🐱‍🏍",
                 "🌹","🌹",
             };
+
             Random random = new Random();                                               // Create a random Number genertator
 
             foreach(TextBlock textBlock in mainGrid.Children.OfType<TextBlock>())       // Cycle through ever textbox in the grid "mainGrid"
             {
-                int index = random.Next(animalEmoji.Count);                             //Get a random number between 0 and the length fo the list (remaining emji)
-                string nextEmoji = animalEmoji[index];                                  // Select emoji from list using the random numbner
-                textBlock.Text = nextEmoji;                                             // add randomly selected emoji to the textbox
-                animalEmoji.RemoveAt(index);                                            // delete emoji from the list
+                if (textBlock.Name != "timeTextBlock")
+                {
+                    textBlock.Visibility = Visibility.Visible;
+                    int index = random.Next(animalEmoji.Count);                             //Get a random number between 0 and the length fo the list (remaining emji)
+                    string nextEmoji = animalEmoji[index];                                  // Select emoji from list using the random numbner
+                    textBlock.Text = nextEmoji;                                             // add randomly selected emoji to the textbox
+                    animalEmoji.RemoveAt(index);                                            // delete emoji from the list
+                }
+            }
+            timer.Start();
+            tenthsOfSecondsElapsed = 0;
+            matchesFound = 0;
+        }
+
+
+        TextBlock lastTextBlockClikcked;
+        bool findingMatch = false;
+        private void TextBlock_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            TextBlock textBlock = sender as TextBlock;
+            if (findingMatch == false)
+            {
+                textBlock.Visibility = Visibility.Hidden;
+                lastTextBlockClikcked = textBlock;
+                findingMatch = true;
+            }
+            else if (textBlock.Text == lastTextBlockClikcked.Text)
+            {
+                matchesFound++;
+                textBlock.Visibility = Visibility.Hidden;
+                findingMatch = false;
+            }
+            else
+            {
+                lastTextBlockClikcked.Visibility = Visibility.Visible;
+                findingMatch = false;
+            }
+        }
+
+        private void timeTextBlock_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if(matchesFound == 8)
+            {
+                SetUpGame();
             }
         }
     }
